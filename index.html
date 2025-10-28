@@ -1171,15 +1171,6 @@
         document.getElementById('adminPassword').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') checkPassword();
         });
-
-        // REMOVIDO: Ya no se cierra al hacer clic fuera
-        // Solo se cierra con el botón X o "Cerrar Sesión"
-        
-        // Verificar sesión al cargar el modal
-        document.getElementById('adminButton').addEventListener('click', () => {
-            document.getElementById('adminModal').style.display = 'block';
-            checkSession(); // Verificar si ya hay sesión activa
-        });
     </script>
 </body>
 </html>
