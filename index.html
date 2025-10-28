@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Atracos - FiveM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #61bbf7 0%, #032c9e 100%);
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(233, 69, 96, 0.3);
+        }
+
+        h1 {
+            font-size: 3em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        .admin-btn {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 900px;
+            border: 2px solid rgba(233, 69, 96, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            float: right;
+            font-size: 2em;
+            cursor: pointer;
+            color: #e94560;
+            transition: all 0.3s ease;
+        }
+
+        .close:hover {
+            transform: rotate(90deg);
+        }
+
+        .login-form, .admin-panel {
+            text-align: center;
+        }
+
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        input[type="password"],
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid rgba(233, 69, 96, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1em;
+        }
+
+        select option {
+            background: #16213e;
+            color: white;
+        }
+
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #e94560 0%, #c72e47 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: rotate(45deg);
+            transition: 0.5s;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #e94560;
+            box-shadow: 0 15px 40px rgba(233, 69, 96, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .icon {
+            font-size: 2.5em;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .police-badge {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 15px;
+            border-left: 4px solid #e94560;
+        }
+
+        .requirement {
+            background: rgba(233, 69, 96, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #e94560;
+        }
+
+        .reward {
+            background: rgba(76, 209, 55, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #4cd137;
+        }
+
+        .money-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .black-money {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: #ecf0f1;
+        }
+
+        .cash-money {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: #fff;
+        }
+
+        .parts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .part-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .part-item:hover {
+            background: rgba(233, 69, 96, 0.2);
+            transform: scale(1.05);
+        }
+
+        .part-name {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            color: #ecf0f1;
+        }
+
+        .part-price {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #4cd137;
+        }
+
+        .items-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .items-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .items-list li:last-child {
+            border-bottom: none;
+        }
+
+        .highlight {
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        .edit-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .edit-section h3 {
+            color: #e94560;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .success-msg {
+            background: rgba(76, 209, 55, 0.2);
+            color: #4cd137;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #4cd137;
+            display: none;
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .parts-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Sistema de Atracos LS Network</h1>
+            <button class="admin-btn" id="adminButton">🔒 Panel de Administración</button>
+        </header>
+
+        <div id="adminModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeModal">&times;</span>
+                
+                <div id="loginForm" class="login-form">
+                    <h2>🔒 Acceso Administrativo</h2>
+                    <div class="form-group">
+                        <label>Contraseña:</label>
+                        <input type="password" id="adminPassword" placeholder="Ingresa la contraseña">
+                    </div>
+                    <button class="btn" id="loginButton">Acceder</button>
+                </div>
+
+                <div id="adminPanel" class="admin-panel" style="display: none;">
+                    <h2>⚙️ Panel de Administración</h2>
+                    <div class="success-msg" id="successMsg">✓ Cambios guardados correctamente</div>
+                    
+                    <div class="form-group">
+                        <label>Selecciona qué editar:</label>
+                        <select id="editSelector">
+                            <option value="">-- Selecciona una opción --</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align: center; margin: 20px 0;">
+                        <button class="btn" id="addNewHeistBtn">➕ Añadir Nuevo Atraco</button>
+                        <button class="btn btn-secondary" id="refreshViewBtn" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">🔄 Actualizar Vista</button>
+                    </div>
+
+                    <div id="editContent"></div>
+
+                    <button class="btn" id="saveButton">💾 Guardar Cambios</button>
+                    <button class="btn btn-secondary" id="logoutButton">Cerrar Sesión</button>
+                    <button class="btn" id="downloadJsonBtn" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">📥 Descargar JSON</button>
+                    <button class="btn" id="uploadJsonBtn" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">📤 Cargar JSON</button>
+                    <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="grid-column: 1/-1;">
+            <div class="card-header">
+                <span class="icon">🔧</span>
+                <h2 class="card-title">Desguace de Piezas</h2>
+            </div>
+            <div class="parts-grid" id="partsGrid"></div>
+            <span class="money-type black-money">💰 DINERO NEGRO</span>
+        </div>
+
+        <div class="grid" id="heistsGrid"></div>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = "admin123";
+        
+        // Datos por defecto
+        const defaultData = {
+            desguace: {
+                capo: 80,
+                puertaDI: 150,
+                puertaDD: 900,
+                puertaTI: 150,
+                puertaTD: 1000,
+                ruedaDI: 170,
+                ruedaDD: 150,
+                ruedaTI: 180,
+                ruedaTD: 130
+            },
+            badulaque: {
+                name: "Badulaque / Licorería",
+                icon: "🍺",
+                police: "Mín. 2 / Máx. 4",
+                requisito: "Lockpick",
+                recompensaMin: 750,
+                recompensaMax: 2200,
+                moneyType: "black"
+            },
+            atm: {
+                name: "Robo ATM",
+                icon: "🏧",
+                police: "Mín. 2 / Máx. 4",
+                requisito: "laserdrill, nylonrope, screwdriverset, blowtorch",
+                recompensaMin: 750,
+                recompensaMax: 2200,
+                moneyType: "cash"
+            },
+            peluqueria: {
+                name: "Robo Peluqueria",
+                icon: "✂️",
+                police: "Mín. 2 / Máx. 4",
+                requisito: "Lockpick",
+                recompensaMin: 750,
+                recompensaMax: 1000,
+                moneyType: "cash"
+            },
+            tienda: {
+                name: "Tienda de Ropa",
+                icon: "👕",
+                police: "Mín. 2 / Máx. 4",
+                requisito: "Lockpick",
+                dineroMin: 750,
+                dineroMax: 1200,
+                objetos: "Fibra Kevlar (3-6 unidades)",
+                moneyType: "cash"
+            },
+            almacenes: {
+                name: "Robo de Almacenes",
+                icon: "📦",
+                police: "Mín. 2 / Máx. 4",
+                requisito: "Llave de Almacén",
+                dineroMin: 750,
+                dineroMax: 1200,
+                objetos: "Palas (1-3 unidades)",
+                moneyType: "black"
+            },
+            farmacia: {
+                name: "Robo Farmacia",
+                icon: "💊",
+                police: "Mín. 3 / Máx. 5",
+                dineroMin: 750,
+                dineroMax: 800,
+                item1: "📦 20 Vendas",
+                item2: "💊 15 Pastillas Percocet 30mg",
+                item3: "💊 15 Pastillas Vicodin 10mg",
+                moneyType: "cash"
+            },
+            growshop: {
+                name: "Atraco Grow Shop",
+                icon: "🌿",
+                police: "Mín. 3 / Máx. 5",
+                item1: "🌱 15 Semillas",
+                item2: "⛏️ 10 Palas",
+                item3: "💧 2 Regaderas",
+                moneyType: "none"
+            },
+            joyeria: {
+                name: "Robo a Joyeria",
+                icon: "💎",
+                police: "Mín. 4 / Máx. 6",
+                requisito: "glass_cutter, gasmask, weapon_switchblade, cutter, bag",
+                item1: "💎 Diamante",
+                item2: "⌚ Reloj de Oro",
+                item3: "💍 Anillos de Oro",
+                moneyType: "none"
+            },
+            fleeca: {
+                name: "Robo a Fleeca",
+                icon: "🏦",
+                police: "Mín. 5 / Máx. 6",
+                requisito: "x_laptop, pliers, x_device, fleecacard, bag",
+                recompensaMin: 50000,
+                recompensaMax: 50000,
+                moneyType: "cash"
+            },
+            paleto: {
+                name: "Robo a Banco de Paleto",
+                icon: "🏦",
+                police: "Mín. 5 / Máx. 6",
+                requisito: "x_laptop, pliers, x_device, fleecacard, bag",
+                recompensaMin: 50000,
+                recompensaMax: 50000,
+                moneyType: "cash"
+            },
+            federal: {
+                name: "Robo a Banco Federal",
+                icon: "🏦",
+                police: "Mín. 5 / Máx. 6",
+                requisito: "x_laptop, pliers, x_device, fleecacard, bag",
+                recompensaMin: 50000,
+                recompensaMax: 50000,
+                moneyType: "cash"
+            },
+            ammu: {
+                name: "Robo Ammu-Nation",
+                icon: "🔫",
+                police: "Mín. 5 / Máx. 6",
+                item1: "🔫 1 Pistola",
+                item2: "🔪 1 Machete",
+                item3: "🛡️ Fibras de Kevlar",
+                item4: "🪓 1 Hacha",
+                item5: "📦 Cajas de Munición",
+                moneyType: "none"
+            },
+            tumbas: {
+                name: "Robo a Tumbas",
+                icon: "⚰️",
+                police: "Máx. 2",
+                requisito: "Pala",
+                item1: "💎 1 Diamante",
+                item2: "⌚ 1 Reloj de Oro",
+                item3: "💍 Anillos de Diamante (1-2 unidades)",
+                moneyType: "none"
+            }
+        };
+
+        // Cargar datos
+        let heistData = {};
+        
+        function loadData() {
+            const data = JSON.parse(window.localStorage.getItem('heistData') || '{}');
+            
+            // Si no hay datos guardados, usar los por defecto
+            if (Object.keys(data).length === 0) {
+                heistData = JSON.parse(JSON.stringify(defaultData));
+            } else {
+                // Combinar datos guardados con los por defecto (por si hay nuevos)
+                heistData = { ...defaultData, ...data };
+            }
+            
+            console.log('Datos cargados:', heistData);
+        }
+
+        function saveData() {
+            window.localStorage.setItem('heistData', JSON.stringify(heistData));
+            console.log('Datos guardados:', heistData);
+        }
+
+        function updatePartsGrid() {
+            const partsGrid = document.getElementById('partsGrid');
+            const parts = heistData.desguace;
+            
+            partsGrid.innerHTML = `
+                <div class="part-item"><div class="part-name">Capó</div><div class="part-price">$${parts.capo}</div></div>
+                <div class="part-item"><div class="part-name">Puerta Delantera Izq.</div><div class="part-price">$${parts.puertaDI}</div></div>
+                <div class="part-item"><div class="part-name">Puerta Delantera Der.</div><div class="part-price">$${parts.puertaDD}</div></div>
+                <div class="part-item"><div class="part-name">Puerta Trasera Izq.</div><div class="part-price">$${parts.puertaTI}</div></div>
+                <div class="part-item"><div class="part-name">Puerta Trasera Der.</div><div class="part-price">$${parts.puertaTD}</div></div>
+                <div class="part-item"><div class="part-name">Rueda Delantera Izq.</div><div class="part-price">$${parts.ruedaDI}</div></div>
+                <div class="part-item"><div class="part-name">Rueda Delantera Der.</div><div class="part-price">$${parts.ruedaDD}</div></div>
+                <div class="part-item"><div class="part-name">Rueda Trasera Izq.</div><div class="part-price">$${parts.ruedaTI}</div></div>
+                <div class="part-item"><div class="part-name">Rueda Trasera Der.</div><div class="part-price">$${parts.ruedaTD}</div></div>
+            `;
+        }
+
+        function updateHeistsGrid() {
+            const grid = document.getElementById('heistsGrid');
+            let html = '';
+
+            for (let key in heistData) {
+                if (key === 'desguace') continue;
+                
+                const h = heistData[key];
+                let itemsHtml = '';
+                
+                for (let i = 1; i <= 10; i++) {
+                    if (h['item' + i]) {
+                        itemsHtml += `<li>${h['item' + i]}</li>`;
+                    }
+                }
+
+                const moneyTypeClass = h.moneyType === 'cash' ? 'cash-money' : h.moneyType === 'black' ? 'black-money' : '';
+                const moneyTypeText = h.moneyType === 'cash' ? '💵 DINERO EFECTIVO' : h.moneyType === 'black' ? '💰 DINERO NEGRO' : '';
+
+                html += `
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="icon">${h.icon || '💰'}</span>
+                            <h2 class="card-title">${h.name || 'Atraco'}</h2>
+                        </div>
+                        <div class="police-badge">👮 Policías: <span class="highlight">${h.police || 'N/A'}</span></div>
+                        ${h.requisito ? `<div class="requirement"><strong>📋 Requisito:</strong> ${h.requisito}</div>` : ''}
+                        <div class="reward">
+                            ${(h.dineroMin && h.dineroMax) || (h.recompensaMin && h.recompensaMax) ? 
+                                `<strong>💵 Dinero:</strong> $${h.dineroMin || h.recompensaMin} - $${h.dineroMax || h.recompensaMax}<br>` : ''}
+                            ${h.objetos ? `<strong>🎁 Objetos:</strong> ${h.objetos}<br>` : ''}
+                            ${itemsHtml ? `<strong>🎁 Objetos obtenidos:</strong><ul class="items-list">${itemsHtml}</ul>` : ''}
+                        </div>
+                        ${moneyTypeClass ? `<span class="money-type ${moneyTypeClass}">${moneyTypeText}</span>` : ''}
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+        }
+
+        function updateSelector() {
+            const selector = document.getElementById('editSelector');
+            selector.innerHTML = '<option value="">-- Selecciona una opción --</option>';
+            
+            for (let key in heistData) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = heistData[key].name || key.charAt(0).toUpperCase() + key.slice(1);
+                selector.appendChild(option);
+            }
+        }
+
+        function showEditSection() {
+            const selector = document.getElementById('editSelector').value;
+            const editContent = document.getElementById('editContent');
+            
+            if (!selector) {
+                editContent.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="edit-section"><h3>Editar ' + (heistData[selector].name || selector) + '</h3>';
+            const currentData = heistData[selector];
+            
+            if (selector === 'desguace') {
+                html += `
+                    <div class="input-row">
+                        <div class="form-group"><label>Capó ($):</label><input type="number" id="edit_capo" value="${currentData.capo}"></div>
+                        <div class="form-group"><label>Puerta Delantera Izq. ($):</label><input type="number" id="edit_puertaDI" value="${currentData.puertaDI}"></div>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-group"><label>Puerta Delantera Der. ($):</label><input type="number" id="edit_puertaDD" value="${currentData.puertaDD}"></div>
+                        <div class="form-group"><label>Puerta Trasera Izq. ($):</label><input type="number" id="edit_puertaTI" value="${currentData.puertaTI}"></div>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-group"><label>Puerta Trasera Der. ($):</label><input type="number" id="edit_puertaTD" value="${currentData.puertaTD}"></div>
+                        <div class="form-group"><label>Rueda Delantera Izq. ($):</label><input type="number" id="edit_ruedaDI" value="${currentData.ruedaDI}"></div>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-group"><label>Rueda Delantera Der. ($):</label><input type="number" id="edit_ruedaDD" value="${currentData.ruedaDD}"></div>
+                        <div class="form-group"><label>Rueda Trasera Izq. ($):</label><input type="number" id="edit_ruedaTI" value="${currentData.ruedaTI}"></div>
+                    </div>
+                    <div class="form-group"><label>Rueda Trasera Der. ($):</label><input type="number" id="edit_ruedaTD" value="${currentData.ruedaTD}"></div>
+                `;
+            } else {
+                for (let key in currentData) {
+                    const value = currentData[key] || '';
+                    html += '<div class="form-group"><label>' + key + ':</label>';
+                    
+                    if (key.includes('item')) {
+                        html += `<textarea id="edit_${key}">${value}</textarea>`;
+                    } else if (key === 'moneyType') {
+                        html += `<select id="edit_${key}">
+                            <option value="black" ${value === 'black' ? 'selected' : ''}>Dinero Negro</option>
+                            <option value="cash" ${value === 'cash' ? 'selected' : ''}>Dinero Efectivo</option>
+                            <option value="none" ${value === 'none' ? 'selected' : ''}>Sin dinero</option>
+                        </select>`;
+                    } else if (key === 'name' || key === 'icon' || key === 'police' || key === 'requisito' || key === 'objetos') {
+                        html += `<input type="text" id="edit_${key}" value="${value}">`;
+                    } else if (typeof value === 'number') {
+                        html += `<input type="number" id="edit_${key}" value="${value}">`;
+                    } else {
+                        html += `<input type="text" id="edit_${key}" value="${value}">`;
+                    }
+                    html += '</div>';
+                }
+            }
+
+            html += '</div>';
+            
+            if (selector.startsWith('custom_')) {
+                html += '<div style="text-align: center; margin-top: 15px;"><button class="delete-btn" id="deleteHeistBtn">🗑️ Eliminar este Atraco</button></div>';
+            }
+            
+            editContent.innerHTML = html;
+            
+            if (selector.startsWith('custom_')) {
+                setTimeout(() => {
+                    const deleteBtn = document.getElementById('deleteHeistBtn');
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', () => deleteHeist(selector));
+                    }
+                }, 100);
+            }
+        }
+
+        function saveChanges() {
+            const selector = document.getElementById('editSelector').value;
+            if (!selector) {
+                alert('Por favor selecciona una opción para editar');
+                return;
+            }
+
+            const currentData = heistData[selector];
+            
+            for (let key in currentData) {
+                const input = document.getElementById('edit_' + key);
+                if (input) {
+                    if (input.type === 'number') {
+                        heistData[selector][key] = parseInt(input.value) || 0;
+                    } else {
+                        heistData[selector][key] = input.value;
+                    }
+                }
+            }
+
+            saveData();
+            updatePartsGrid();
+            updateHeistsGrid();
+
+            const msg = document.getElementById('successMsg');
+            msg.textContent = '✓ Cambios guardados correctamente';
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        }
+
+        function showNewHeistForm() {
+            const editContent = document.getElementById('editContent');
+            document.getElementById('editSelector').value = '';
+            
+            editContent.innerHTML = `
+                <div class="edit-section">
+                    <h3>➕ Crear Nuevo Atraco</h3>
+                    
+                    <div class="form-group">
+                        <label>Tipo de Atraco:</label>
+                        <select id="newHeistType">
+                            <option value="simple">Simple (con dinero)</option>
+                            <option value="items">Con Items</option>
+                            <option value="mixed">Mixto (dinero + items)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nombre del Atraco:</label>
+                        <input type="text" id="new_name" placeholder="Ej: Robo a Joyería">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Icono (Emoji):</label>
+                        <input type="text" id="new_icon" placeholder="Ej: 💎" maxlength="2">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Policías Requeridos:</label>
+                        <input type="text" id="new_police" placeholder="Ej: Mín. 3 / Máx. 5">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Requisito (opcional):</label>
+                        <input type="text" id="new_requisito" placeholder="Ej: Llave especial">
+                    </div>
+
+                    <div id="dynamicFields"></div>
+
+                    <div class="form-group">
+                        <label>Tipo de Dinero:</label>
+                        <select id="new_moneyType">
+                            <option value="black">Dinero Negro</option>
+                            <option value="cash">Dinero Efectivo</option>
+                            <option value="none">Sin dinero</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn" id="createHeistBtn">✅ Crear Atraco</button>
+                        <button class="btn btn-secondary" id="cancelHeistBtn">❌ Cancelar</button>
+                    </div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                document.getElementById('newHeistType').addEventListener('change', updateNewHeistFields);
+                document.getElementById('createHeistBtn').addEventListener('click', createNewHeist);
+                document.getElementById('cancelHeistBtn').addEventListener('click', () => {
+                    editContent.innerHTML = '';
+                });
+                updateNewHeistFields();
+            }, 100);
+        }
+
+        function updateNewHeistFields() {
+            const type = document.getElementById('newHeistType').value;
+            const dynamicFields = document.getElementById('dynamicFields');
+            
+            let html = '';
+            
+            if (type === 'simple') {
+                html = `
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label>Dinero Mínimo ($):</label>
+                            <input type="number" id="new_dineroMin" placeholder="750">
+                        </div>
+                        <div class="form-group">
+                            <label>Dinero Máximo ($):</label>
+                            <input type="number" id="new_dineroMax" placeholder="2000">
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'items') {
+                html = `
+                    <div class="form-group">
+                        <label>Número de Items:</label>
+                        <input type="number" id="itemCount" min="1" max="10" value="3">
+                    </div>
+                    <div id="itemFields"></div>
+                `;
+            } else if (type === 'mixed') {
+                html = `
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label>Dinero Mínimo ($):</label>
+                            <input type="number" id="new_dineroMin" placeholder="750">
+                        </div>
+                        <div class="form-group">
+                            <label>Dinero Máximo ($):</label>
+                            <input type="number" id="new_dineroMax" placeholder="2000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Items:</label>
+                        <input type="number" id="itemCount" min="1" max="10" value="3">
+                    </div>
+                    <div id="itemFields"></div>
+                `;
+            }
+            
+            dynamicFields.innerHTML = html;
+            
+            const itemCount = document.getElementById('itemCount');
+            if (itemCount) {
+                itemCount.addEventListener('change', generateItemFields);
+                generateItemFields();
+            }
+        }
+
+        function generateItemFields() {
+            const itemCount = document.getElementById('itemCount');
+            if (!itemCount) return;
+            
+            const count = parseInt(itemCount.value);
+            const itemFields = document.getElementById('itemFields');
+            if (!itemFields) return;
+            
+            let html = '';
+            for (let i = 1; i <= count; i++) {
+                html += `
+                    <div class="form-group">
+                        <label>Item ${i}:</label>
+                        <input type="text" id="new_item${i}" placeholder="Ej: 🔑 5 Llaves maestras">
+                    </div>
+                `;
+            }
+            
+            itemFields.innerHTML = html;
+        }
+
+        function createNewHeist() {
+            const name = document.getElementById('new_name').value.trim();
+            const icon = document.getElementById('new_icon').value.trim();
+            const police = document.getElementById('new_police').value.trim();
+            const requisito = document.getElementById('new_requisito').value.trim();
+            const type = document.getElementById('newHeistType').value;
+            const moneyType = document.getElementById('new_moneyType').value;
+
+            if (!name || !icon || !police) {
+                alert('⚠️ Por favor completa al menos el nombre, icono y policías requeridos');
+                return;
+            }
+
+            const heistId = 'custom_' + Date.now();
+            const newHeist = {
+                name: name,
+                icon: icon,
+                police: police,
+                moneyType: moneyType
+            };
+
+            if (requisito) newHeist.requisito = requisito;
+
+            if (type === 'simple' || type === 'mixed') {
+                const min = document.getElementById('new_dineroMin').value;
+                const max = document.getElementById('new_dineroMax').value;
+                if (min && max) {
+                    newHeist.dineroMin = parseInt(min);
+                    newHeist.dineroMax = parseInt(max);
+                }
+            }
+
+            if (type === 'items' || type === 'mixed') {
+                const itemCount = parseInt(document.getElementById('itemCount').value);
+                for (let i = 1; i <= itemCount; i++) {
+                    const itemEl = document.getElementById('new_item' + i);
+                    if (itemEl && itemEl.value.trim()) {
+                        newHeist['item' + i] = itemEl.value.trim();
+                    }
+                }
+            }
+
+            heistData[heistId] = newHeist;
+            saveData();
+            updateHeistsGrid();
+            updateSelector();
+
+            const msg = document.getElementById('successMsg');
+            msg.textContent = '✓ Atraco "' + name + '" creado correctamente';
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+
+            document.getElementById('editContent').innerHTML = '';
+        }
+
+        function deleteHeist(heistId) {
+            if (!heistId.startsWith('custom_')) {
+                alert('⚠️ No puedes eliminar los atracos predeterminados');
+                return;
+            }
+
+            if (confirm('¿Estás seguro de que quieres eliminar este atraco?')) {
+                delete heistData[heistId];
+                saveData();
+                updateHeistsGrid();
+                updateSelector();
+                
+                document.getElementById('editContent').innerHTML = '';
+                document.getElementById('editSelector').value = '';
+                
+                const msg = document.getElementById('successMsg');
+                msg.textContent = '✓ Atraco eliminado correctamente';
+                msg.style.display = 'block';
+                setTimeout(() => { msg.style.display = 'none'; }, 3000);
+            }
+        }
+
+        function downloadJSON() {
+            const dataStr = JSON.stringify(heistData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'atracos_data.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            const msg = document.getElementById('successMsg');
+            msg.textContent = '✓ JSON descargado correctamente';
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        }
+
+        function uploadJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    heistData = data;
+                    saveData();
+                    updatePartsGrid();
+                    updateHeistsGrid();
+                    updateSelector();
+
+                    const msg = document.getElementById('successMsg');
+                    msg.textContent = '✓ JSON cargado correctamente';
+                    msg.style.display = 'block';
+                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                } catch (err) {
+                    alert('❌ Error al cargar el archivo JSON');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                updateSelector();
+            } else {
+                alert('❌ Contraseña incorrecta');
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('editSelector').value = '';
+            document.getElementById('editContent').innerHTML = '';
+        }
+
+        // Event Listeners
+        document.getElementById('adminButton').addEventListener('click', () => {
+            document.getElementById('adminModal').style.display = 'block';
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('adminModal').style.display = 'none';
+            logout();
+        });
+
+        document.getElementById('loginButton').addEventListener('click', checkPassword);
+        document.getElementById('editSelector').addEventListener('change', showEditSection);
+        document.getElementById('saveButton').addEventListener('click', saveChanges);
+        document.getElementById('logoutButton').addEventListener('click', logout);
+        document.getElementById('addNewHeistBtn').addEventListener('click', showNewHeistForm);
+        document.getElementById('refreshViewBtn').addEventListener('click', () => {
+            loadData();
+            updatePartsGrid();
+            updateHeistsGrid();
+            updateSelector();
+
+            const msg = document.getElementById('successMsg');
+            msg.textContent = '✓ Vista actualizada correctamente';
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        });
+
+        document.getElementById('downloadJsonBtn').addEventListener('click', downloadJSON);
+        document.getElementById('uploadJsonBtn').addEventListener('click', () => {
+            document.getElementById('jsonFileInput').click();
+        });
+        document.getElementById('jsonFileInput').addEventListener('change', uploadJSON);
+
+        document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('adminModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+                logout();
+            }
+        });
+
+        // Inicializar
+        loadData();
+        updatePartsGrid();
+        updateHeistsGrid();
+    </script>
+</body>
+</html>
