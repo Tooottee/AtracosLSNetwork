@@ -1112,6 +1112,9 @@
             
             hashPassword(password).then(hash => {
                 if (hash === ADMIN_PASSWORD_HASH) {
+                    // Guardar sesión en sessionStorage
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    
                     document.getElementById('loginForm').style.display = 'none';
                     document.getElementById('adminPanel').style.display = 'block';
                     updateSelector();
@@ -1123,6 +1126,9 @@
         }
 
         function logout() {
+            // Eliminar sesión
+            sessionStorage.removeItem('adminLoggedIn');
+            
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
             document.getElementById('adminPassword').value = '';
@@ -1130,14 +1136,24 @@
             document.getElementById('editContent').innerHTML = '';
         }
 
+        // Verificar si hay sesión activa al cargar
+        function checkSession() {
+            if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                updateSelector();
+            }
+        }
+
         // Event Listeners
         document.getElementById('adminButton').addEventListener('click', () => {
             document.getElementById('adminModal').style.display = 'block';
+            checkSession(); // Verificar si ya hay sesión activa
         });
 
         document.getElementById('closeModal').addEventListener('click', () => {
             document.getElementById('adminModal').style.display = 'none';
-            logout();
+            // NO cierra sesión, solo oculta el modal
         });
 
         document.getElementById('loginButton').addEventListener('click', checkPassword);
@@ -1156,12 +1172,13 @@
             if (e.key === 'Enter') checkPassword();
         });
 
-        window.addEventListener('click', (event) => {
-            const modal = document.getElementById('adminModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
-                logout();
-            }
+        // REMOVIDO: Ya no se cierra al hacer clic fuera
+        // Solo se cierra con el botón X o "Cerrar Sesión"
+        
+        // Verificar sesión al cargar el modal
+        document.getElementById('adminButton').addEventListener('click', () => {
+            document.getElementById('adminModal').style.display = 'block';
+            checkSession(); // Verificar si ya hay sesión activa
         });
     </script>
 </body>
