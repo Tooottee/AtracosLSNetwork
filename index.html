@@ -452,7 +452,20 @@
     </div>
 
     <script>
-        const ADMIN_PASSWORD = "admin123";
+        // Hash SHA-256 de la contraseña (usa una herramienta online para generar tu hash)
+        // Para generar tu hash: https://emn178.github.io/online-tools/sha256.html
+        // Hash actual corresponde a: "admin123"
+        const ADMIN_PASSWORD_HASH = "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9";
+        
+        // Función para hashear la contraseña ingresada
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
         
         // Datos por defecto
         const defaultData = {
@@ -1056,14 +1069,18 @@
 
         function checkPassword() {
             const password = document.getElementById('adminPassword').value;
-            if (password === ADMIN_PASSWORD) {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('adminPanel').style.display = 'block';
-                updateSelector();
-            } else {
-                alert('❌ Contraseña incorrecta');
-                document.getElementById('adminPassword').value = '';
-            }
+            
+            // Hashear la contraseña ingresada y compararla con el hash guardado
+            hashPassword(password).then(hash => {
+                if (hash === ADMIN_PASSWORD_HASH) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'block';
+                    updateSelector();
+                } else {
+                    alert('❌ Contraseña incorrecta');
+                    document.getElementById('adminPassword').value = '';
+                }
+            });
         }
 
         function logout() {
