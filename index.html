@@ -40,10 +40,23 @@
             text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
         }
 
-        .subtitle {
-            font-size: 1.2em;
+        .sync-status {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
             margin-top: 10px;
-            opacity: 0.9;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sync-status.connected {
+            background: rgba(76, 209, 55, 0.3);
+            color: #4cd137;
+        }
+
+        .sync-status.disconnected {
+            background: rgba(233, 69, 96, 0.3);
+            color: #e94560;
         }
 
         .admin-btn {
@@ -373,6 +386,13 @@
             box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
         }
 
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #61bbf7;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 2em;
@@ -396,6 +416,7 @@
     <div class="container">
         <header>
             <h1>🎮 Sistema de Atracos LS Network</h1>
+            <div class="sync-status" id="syncStatus">🔄 Conectando...</div>
             <button class="admin-btn" id="adminButton">🔒 Panel de Administración</button>
         </header>
 
@@ -425,7 +446,6 @@
 
                     <div style="text-align: center; margin: 20px 0;">
                         <button class="btn" id="addNewHeistBtn">➕ Añadir Nuevo Atraco</button>
-                        <button class="btn btn-secondary" id="refreshViewBtn" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">🔄 Actualizar Vista</button>
                     </div>
 
                     <div id="editContent"></div>
@@ -439,25 +459,48 @@
             </div>
         </div>
 
-        <div class="card" style="grid-column: 1/-1;">
-            <div class="card-header">
-                <span class="icon">🔧</span>
-                <h2 class="card-title">Desguace de Piezas</h2>
-            </div>
-            <div class="parts-grid" id="partsGrid"></div>
-            <span class="money-type black-money">💰 DINERO NEGRO</span>
-        </div>
+        <div class="loading" id="loadingIndicator">⏳ Cargando datos...</div>
 
-        <div class="grid" id="heistsGrid"></div>
+        <div id="mainContent" style="display: none;">
+            <div class="card" style="grid-column: 1/-1;">
+                <div class="card-header">
+                    <span class="icon">🔧</span>
+                    <h2 class="card-title">Desguace de Piezas</h2>
+                </div>
+                <div class="parts-grid" id="partsGrid"></div>
+                <span class="money-type black-money">💰 DINERO NEGRO</span>
+            </div>
+
+            <div class="grid" id="heistsGrid"></div>
+        </div>
     </div>
 
-    <script>
-        // Hash SHA-256 de la contraseña (usa una herramienta online para generar tu hash)
-        // Para generar tu hash: https://emn178.github.io/online-tools/sha256.html
-        // Hash actual corresponde a: "admin123"
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // ⚠️ CONFIGURACIÓN DE FIREBASE - REEMPLAZA CON TUS DATOS
+        // Instrucciones en los comentarios al final del código
+        const firebaseConfig = {
+    apiKey: "AIzaSyAmsEh_2u1bQVutVqQ1h5pCwXNBq753bY0",
+    authDomain: "atracos-ls-network.firebaseapp.com",
+    databaseURL: "https://atracos-ls-network-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "atracos-ls-network",
+    storageBucket: "atracos-ls-network.firebasestorage.app",
+    messagingSenderId: "248593111599",
+    appId: "1:248593111599:web:4402b020ab837a5c1204da",
+    measurementId: "G-GV31VZHSP3"
+};
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const heistsRef = ref(database, 'heists');
+
+        // Hash de contraseña
         const ADMIN_PASSWORD_HASH = "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9";
-        
-        // Función para hashear la contraseña ingresada
+
         async function hashPassword(password) {
             const encoder = new TextEncoder();
             const data = encoder.encode(password);
@@ -466,7 +509,7 @@
             const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             return hashHex;
         }
-        
+
         // Datos por defecto
         const defaultData = {
             desguace: {
@@ -607,32 +650,59 @@
             }
         };
 
-        // Cargar datos
         let heistData = {};
-        
-        function loadData() {
-            const data = JSON.parse(window.localStorage.getItem('heistData') || '{}');
-            
-            // Si no hay datos guardados, usar los por defecto
-            if (Object.keys(data).length === 0) {
-                heistData = JSON.parse(JSON.stringify(defaultData));
-            } else {
-                // Combinar datos guardados con los por defecto (por si hay nuevos)
-                heistData = { ...defaultData, ...data };
-            }
-            
-            console.log('Datos cargados:', heistData);
-        }
+        let isInitialLoad = true;
 
-        function saveData() {
-            window.localStorage.setItem('heistData', JSON.stringify(heistData));
-            console.log('Datos guardados:', heistData);
+        // Escuchar cambios en tiempo real desde Firebase
+        onValue(heistsRef, (snapshot) => {
+            const data = snapshot.val();
+            
+            if (!data && isInitialLoad) {
+                // Si no hay datos en Firebase, subir los datos por defecto
+                set(heistsRef, defaultData);
+                heistData = JSON.parse(JSON.stringify(defaultData));
+            } else if (data) {
+                heistData = data;
+            }
+
+            isInitialLoad = false;
+            updatePartsGrid();
+            updateHeistsGrid();
+            updateSelector();
+            
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            const statusEl = document.getElementById('syncStatus');
+            statusEl.textContent = '✓ Sincronizado';
+            statusEl.className = 'sync-status connected';
+        }, (error) => {
+            console.error('Error de Firebase:', error);
+            const statusEl = document.getElementById('syncStatus');
+            statusEl.textContent = '✗ Error de conexión';
+            statusEl.className = 'sync-status disconnected';
+        });
+
+        function saveToFirebase() {
+            set(heistsRef, heistData)
+                .then(() => {
+                    console.log('Datos guardados en Firebase');
+                    const msg = document.getElementById('successMsg');
+                    msg.textContent = '✓ Cambios sincronizados con todos los usuarios';
+                    msg.style.display = 'block';
+                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                })
+                .catch((error) => {
+                    console.error('Error al guardar:', error);
+                    alert('❌ Error al guardar los cambios');
+                });
         }
 
         function updatePartsGrid() {
             const partsGrid = document.getElementById('partsGrid');
-            const parts = heistData.desguace;
+            if (!heistData.desguace) return;
             
+            const parts = heistData.desguace;
             partsGrid.innerHTML = `
                 <div class="part-item"><div class="part-name">Capó</div><div class="part-price">$${parts.capo}</div></div>
                 <div class="part-item"><div class="part-name">Puerta Delantera Izq.</div><div class="part-price">$${parts.puertaDI}</div></div>
@@ -793,14 +863,7 @@
                 }
             }
 
-            saveData();
-            updatePartsGrid();
-            updateHeistsGrid();
-
-            const msg = document.getElementById('successMsg');
-            msg.textContent = '✓ Cambios guardados correctamente';
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+            saveToFirebase();
         }
 
         function showNewHeistForm() {
@@ -988,15 +1051,7 @@
             }
 
             heistData[heistId] = newHeist;
-            saveData();
-            updateHeistsGrid();
-            updateSelector();
-
-            const msg = document.getElementById('successMsg');
-            msg.textContent = '✓ Atraco "' + name + '" creado correctamente';
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 3000);
-
+            saveToFirebase();
             document.getElementById('editContent').innerHTML = '';
         }
 
@@ -1008,17 +1063,10 @@
 
             if (confirm('¿Estás seguro de que quieres eliminar este atraco?')) {
                 delete heistData[heistId];
-                saveData();
-                updateHeistsGrid();
-                updateSelector();
+                saveToFirebase();
                 
                 document.getElementById('editContent').innerHTML = '';
                 document.getElementById('editSelector').value = '';
-                
-                const msg = document.getElementById('successMsg');
-                msg.textContent = '✓ Atraco eliminado correctamente';
-                msg.style.display = 'block';
-                setTimeout(() => { msg.style.display = 'none'; }, 3000);
             }
         }
 
@@ -1049,15 +1097,7 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     heistData = data;
-                    saveData();
-                    updatePartsGrid();
-                    updateHeistsGrid();
-                    updateSelector();
-
-                    const msg = document.getElementById('successMsg');
-                    msg.textContent = '✓ JSON cargado correctamente';
-                    msg.style.display = 'block';
-                    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                    saveToFirebase();
                 } catch (err) {
                     alert('❌ Error al cargar el archivo JSON');
                     console.error(err);
@@ -1070,7 +1110,6 @@
         function checkPassword() {
             const password = document.getElementById('adminPassword').value;
             
-            // Hashear la contraseña ingresada y compararla con el hash guardado
             hashPassword(password).then(hash => {
                 if (hash === ADMIN_PASSWORD_HASH) {
                     document.getElementById('loginForm').style.display = 'none';
@@ -1106,17 +1145,6 @@
         document.getElementById('saveButton').addEventListener('click', saveChanges);
         document.getElementById('logoutButton').addEventListener('click', logout);
         document.getElementById('addNewHeistBtn').addEventListener('click', showNewHeistForm);
-        document.getElementById('refreshViewBtn').addEventListener('click', () => {
-            loadData();
-            updatePartsGrid();
-            updateHeistsGrid();
-            updateSelector();
-
-            const msg = document.getElementById('successMsg');
-            msg.textContent = '✓ Vista actualizada correctamente';
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 3000);
-        });
 
         document.getElementById('downloadJsonBtn').addEventListener('click', downloadJSON);
         document.getElementById('uploadJsonBtn').addEventListener('click', () => {
@@ -1135,11 +1163,84 @@
                 logout();
             }
         });
-
-        // Inicializar
-        loadData();
-        updatePartsGrid();
-        updateHeistsGrid();
     </script>
 </body>
 </html>
+
+<!-- 
+═══════════════════════════════════════════════════════════════
+📋 INSTRUCCIONES PARA CONFIGURAR FIREBASE
+═══════════════════════════════════════════════════════════════
+
+1️⃣ CREAR PROYECTO EN FIREBASE:
+   - Ve a: https://console.firebase.google.com/
+   - Haz clic en "Agregar proyecto"
+   - Nombre del proyecto: "atracos-ls-network" (o el que prefieras)
+   - Desactiva Google Analytics (opcional)
+   - Haz clic en "Crear proyecto"
+
+2️⃣ CONFIGURAR REALTIME DATABASE:
+   - En el menú lateral, ve a "Realtime Database"
+   - Haz clic en "Crear base de datos"
+   - Ubicación: elige la más cercana a tu región
+   - Reglas de seguridad: selecciona "Modo de prueba" (por ahora)
+   - Haz clic en "Habilitar"
+
+3️⃣ OBTENER CONFIGURACIÓN:
+   - Ve a "Configuración del proyecto" (ícono de engranaje)
+   - En "Tus aplicaciones", haz clic en el ícono </> (Web)
+   - Registra tu app con el nombre que quieras
+   - Copia la configuración de firebaseConfig
+
+4️⃣ REEMPLAZAR EN EL CÓDIGO:
+   - Busca en este HTML la sección "firebaseConfig"
+   - Reemplaza TODOS los valores con los que copiaste:
+   
+   const firebaseConfig = {
+       apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXX",
+       authDomain: "tu-proyecto.firebaseapp.com",
+       databaseURL: "https://tu-proyecto-default-rtdb.firebaseio.com",
+       projectId: "tu-proyecto-id",
+       storageBucket: "tu-proyecto.appspot.com",
+       messagingSenderId: "123456789012",
+       appId: "1:123456789012:web:abcdef123456"
+   };
+
+5️⃣ CONFIGURAR REGLAS DE SEGURIDAD (IMPORTANTE):
+   - Ve a "Realtime Database" > "Reglas"
+   - Reemplaza con estas reglas para permitir lectura a todos pero escritura solo con auth:
+   
+   {
+     "rules": {
+       ".read": true,
+       ".write": true
+     }
+   }
+   
+   NOTA: Estas reglas son básicas. Para producción, considera agregar autenticación.
+
+6️⃣ SUBIR A GITHUB:
+   - Guarda el archivo HTML con la configuración
+   - Haz commit y push a tu repositorio
+   - GitHub Pages actualizará automáticamente
+
+═══════════════════════════════════════════════════════════════
+✅ VENTAJAS DE ESTA SOLUCIÓN:
+═══════════════════════════════════════════════════════════════
+
+✓ 100% GRATIS (hasta 1GB de datos y 10GB de transferencia/mes)
+✓ SINCRONIZACIÓN EN TIEMPO REAL (todos ven los cambios al instante)
+✓ SIN SERVIDOR NECESARIO
+✓ FÁCIL DE CONFIGURAR
+✓ ESCALABLE
+
+═══════════════════════════════════════════════════════════════
+🔒 SEGURIDAD ADICIONAL (OPCIONAL):
+═══════════════════════════════════════════════════════════════
+
+Para mayor seguridad, puedes configurar Firebase Authentication:
+- Habilita "Email/Password" en Authentication
+- Modifica las reglas de la base de datos para requerir autenticación
+- Agrega login con Firebase Auth en el panel de admin
+
+-->
